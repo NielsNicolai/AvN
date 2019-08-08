@@ -1,0 +1,1 @@
+"C:\Users\NINIC2\AppData\Local\Continuum\anaconda3\python.exe" "C:\Users\NINIC2\Documents\Python Scripts\DO_Setpoint_Ctrl_AvN.py"
