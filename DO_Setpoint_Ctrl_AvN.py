@@ -18,6 +18,9 @@ import numpy as np
 
 from connectDatEUAbase import *
 
+#Define in which folder the program is located
+path = 'C:/Users/NINIC2/Documents/Python Scripts/'
+
 #Initialise connection with the datEAUbase
 cursor, conn = create_connection()
 
@@ -65,7 +68,7 @@ NO3 = df['NO3-N'].iloc[-Nfltr:].mean()
 
 #Get previous control values saved in txt file
 try:    
-    stored_vals = pd.read_csv('C:/Users/NINIC2/Documents/Python Scripts/control_values.csv', sep=',')
+    stored_vals = pd.read_csv(path+'control_values.csv', sep=',')
     stored_vals.set_index('datetime', drop=True, inplace=True)
     DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
     error_1 = stored_vals['error_1'].iloc[-1]
@@ -100,7 +103,7 @@ except FileNotFoundError as e:
             }
         )
     stored_vals.set_index('datetime', inplace=True)
-    with open('C:/Users/NINIC2/Documents/Python Scripts/control_values.csv', 'w') as f:
+    with open(path+'control_values.csv', 'w') as f:
         stored_vals.to_csv(f, header=True)
 
 
@@ -156,7 +159,7 @@ new_vals = pd.DataFrame(
     )
 new_vals.set_index('datetime', drop=True, inplace=True)    
 
-with open('C:/Users/NINIC2/Documents/Python Scripts/control_values.csv', 'a', newline='') as f:
+with open(path+'control_values.csv', 'a', newline='') as f:
     new_vals.to_csv(f, header=False)
     
 #Overwrite CSV file DO setpoints continuous DO control
@@ -172,7 +175,7 @@ new_DOsp = pd.DataFrame(
         }
     )
 
-new_DOsp.to_csv('C:/Users/NINIC2/Documents/Python Scripts/AIC_341_Data.csv',sep=',', index=False, header=False)
+new_DOsp.to_csv(path+'AIC_341_Data.csv',sep=',', index=False, header=False)
     
     
     
