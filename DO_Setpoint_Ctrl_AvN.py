@@ -85,9 +85,9 @@ df = df.replace(0.0, np.nan)
 
 #%%  GET INTERMEDIATE DATA STORED LOCALLY
 
-today = datetime.datetime.now().strftime("%Y%m%d%H%M")
+today = datetime.datetime.now().strftime("%Y%m%d")
 yesterdayTemp = datetime.datetime.now() - datetime.timedelta(days=1)
-yesterday = yesterdayTemp.strftime("%Y%m%d%H%M")
+yesterday = yesterdayTemp.strftime("%Y%m%d")
 
 #Try to get previous control values saved in an existing txt file of the same day
 try:    
