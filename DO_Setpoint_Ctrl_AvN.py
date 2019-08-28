@@ -27,6 +27,8 @@ if PC_name == 'MODELEAU':
     path_intermData = 'C:/Users/Admin/Documents/Python Scripts/AvN Control/Data/'
     #Define in which folder the final control action is stored
     path_ctrlAction = 'D:/DataReadFile/'
+    #Define in which folder the user defined variables are found
+    path_usrVals = 'C:/Users/Admin/Documents/Python Scripts/AvN Control/Data/'
 elif PC_name == 'GCI-MODELEAU-08':
     #Define in which folder the intermediate data is stored
     path_intermData = 'C:/Users/NINIC2/Documents/Python Scripts/'
