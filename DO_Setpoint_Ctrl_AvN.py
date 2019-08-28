@@ -104,7 +104,7 @@ try:
 
 #Catch error if file is not existing              
 except FileNotFoundError as e:
-    DOsp_1 = 0.2
+    DOsp_1 = 0.1
     error_1 = 0
     error_2 = 0
     NH4_1 = 0
@@ -136,16 +136,16 @@ NO3 = df['NO3-N'].iloc[-Nfltr:].mean()
 
 #%%  PID CONTROL
 #PID control action calculation using filtered value
-error_mode = "ratio" #Determines the way the AvN error is calculated: "ratio" or "diff"
+error_mode = "diff" #Determines the way the AvN error is calculated: "ratio" or "diff"
 operating_mode = "auto" #Determines the operating mode of the controller: "man" or "auto"
 
 Ts = 1.0 #Sampling period
 alpha = 1.0 
 beta = 0.0
 
-P = 0.01#0.02
-I = 0.02#0.0005
-D = 0
+P = 0.1#0.02
+I = 0.0025#0.0005
+D = 0.1
 
 c0 = P + (I*Ts + D/Ts)
 c1 = -(P + 2*D/Ts)
@@ -163,7 +163,7 @@ DOsp_min = 0.05 #s
 DOsp_max = 0.5
 DOsp = np.clip(DOsp, a_min=DOsp_min, a_max=DOsp_max)
 
-DOsp_man = 0.2 #Manual mode setpoint
+DOsp_man = 0.1 #Manual mode setpoint
 if operating_mode == "auto":
     DOsp = DOsp
 else:
@@ -174,14 +174,18 @@ if np.isnan(DOsp): #If for some reason the calculated value is NaN
 
 #%% APPLY SETPOINT
 #Overwrite CSV file DO setpoints continuous DO control
-write_delay = 65
+write_delay = 61
 write_time = datetime.datetime.now() + datetime.timedelta(seconds=write_delay)
+
+write_time_red1 = datetime.datetime.now() + datetime.timedelta(seconds=15)
+write_time_red2 = datetime.datetime.now() + datetime.timedelta(seconds=30)
+write_time_red3 = datetime.datetime.now() + datetime.timedelta(seconds=45)
 
 new_DOsp = pd.DataFrame(
     data={
-        'date':[datetime.datetime.now().strftime("%Y.%m.%d")], 
-        'hour':[write_time.strftime("%H:%M:%S")],
-        'DOsp':[round(DOsp,2)],
+        'date':[datetime.datetime.now().strftime("%Y.%m.%d"),datetime.datetime.now().strftime("%Y.%m.%d"),datetime.datetime.now().strftime("%Y.%m.%d"),datetime.datetime.now().strftime("%Y.%m.%d")], 
+        'hour':[write_time.strftime("%H:%M:%S"),write_time_red1.strftime("%H:%M:%S"),write_time_red2.strftime("%H:%M:%S"),write_time_red3.strftime("%H:%M:%S")],
+        'DOsp':[round(DOsp,2),round(DOsp,2),round(DOsp,2),round(DOsp,2)],
         }
     )
 
