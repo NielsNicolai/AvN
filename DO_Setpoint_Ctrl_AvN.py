@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug  5 14:00:58 2019
-
-@author: NINIC2
-"""
-
-# -*- coding: utf-8 -*-
-"""
 Created on Tue Jul 30 16:23:40 2019
-
 @author: NINIC2
+
+DESCRIPTION: THE FOLLOWING SCRIPT IS USED FOR AVN CONTINUOUS DO SETPOINT CONTROL.
+IT IS SPECIFICALLY TAILORD FOR THE CO-PILOT REACTOR OF THE pilEAUTe PLANT OF THE modelEAU GROUP OF PROF. P. VANROLLEGHEM.
+ALL MEASUREMENT DATA IS OBTAINED FROM THE datEAUbase. PROPER FUNCTIONING OF THE LATTER IS THEREFORE MANDATORY.
+
+Copyright (c) 2019 by Niels Nicolaï, nicolai.niels@gmail.com, modelEAU, Université Laval. All Rights Reserved.
 """
 
 import datetime
 import pandas as pd
 import numpy as np
 import os
+#import definitions_AvN 
 
 from connectDatEUAbase import *
 
@@ -33,9 +32,15 @@ elif PC_name == 'GCI-MODELEAU-08':
     path_intermData = 'C:/Users/NINIC2/Documents/Python Scripts/'
     #Define in which folder the final control action is stored
     path_ctrlAction = 'C:/Users/NINIC2/Documents/Python Scripts/'
+    #Define in which folder the user defined variables are found
+    path_usrVals = 'C:/Users/NINIC2/Documents/Python Scripts/'
 else:
     print('Add directories to PATH')
     exit()
+    
+#%% LOAD USER DEFINED PARAMETERS
+with open(path_usrVals+'values_init_DOsp_AvN.txt') as f:
+    usr_vals = eval(f.read())
 
 #%%  GET DATA FROM datEAUbase
 #Initialise connection with the datEAUbase
@@ -84,11 +89,6 @@ try:
     DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
     error_1 = stored_vals['error_1'].iloc[-1]
     error_2 = stored_vals['error_2'].iloc[-1]
-    NH4_1 = stored_vals['NH4_1'].iloc[-1]
-    NO3_1 = stored_vals['NO3_1'].iloc[-1]
-    P = stored_vals['P'].iloc[-1]
-    I = stored_vals['I'].iloc[-1]
-    D = stored_vals['D'].iloc[-1]
 
     #Prevent errors when database read communication results in NaN
     i = 2
@@ -96,30 +96,23 @@ try:
            DOsp_1  = stored_vals['DOsp_1'].iloc[-i]
            error_1 = stored_vals['error_1'].iloc[-i]
            error_2 = stored_vals['error_2'].iloc[-i]
-           NH4_1 = stored_vals['NH4_1'].iloc[-i]
-           NO3_1 = stored_vals['NO3_1'].iloc[-i]
-           P = stored_vals['P'].iloc[-i]
-           I = stored_vals['I'].iloc[-i]
-           D = stored_vals['D'].iloc[-i]
 
 #Catch error if file is not existing              
 except FileNotFoundError as e:
-    DOsp_1 = 0.2
-    error_1 = 0
-    error_2 = 0
-    NH4_1 = 0
-    NO3_1 = 0
+    DOsp_1 = usr_vals['DOsp_1']
+    error_1 = usr_vals['error_1']
+    error_2 = usr_vals['error_2']
     stored_vals = pd.DataFrame(
         data={
             'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-            'DOsp_1':[DOsp_1],
-            'error_1':[error_1],
-            'error_2':[error_2],
-            'NH4_1':[NH4_1],
-            'NO3_1':[NO3_1],
-            'P':[0],
-            'I':[0],
-            'D':[0],
+            'DOsp_1':usr_vals['DOsp_1'],
+            'error_1':usr_vals['error_1'],
+            'error_2':usr_vals['error_2'],
+            'NH4':usr_vals['NH4'],
+            'NO3':usr_vals['NO3'],
+            'P':usr_vals['P'],
+            'I':usr_vals['I'],
+            'D':usr_vals['D'],
             }
         )
     stored_vals.set_index('datetime', inplace=True)
@@ -129,53 +122,47 @@ except FileNotFoundError as e:
 #%%  FILTER DATA
 #Filter the data to get a representative value for control action calculation
 Fs = 6 #sample frequency in samples per minute
-Nfltr = 1*Fs #filter length in minutes
+NFltr = round(usr_vals['lenFltr']*Fs) #filter length in minutes
 
-NH4 = df['NH4-N'].iloc[-Nfltr:].mean()
-NO3 = df['NO3-N'].iloc[-Nfltr:].mean()
+NH4 = df['NH4-N'].iloc[-NFltr:].mean()
+NO3 = df['NO3-N'].iloc[-NFltr:].mean()
 
 #%%  PID CONTROL
 #PID control action calculation using filtered value
-error_mode = "ratio" #Determines the way the AvN error is calculated: "ratio" or "diff"
+error_mode = "diff" #Determines the way the AvN error is calculated: "ratio" or "diff"
 operating_mode = "auto" #Determines the operating mode of the controller: "man" or "auto"
 
-Ts = 1.0 #Sampling period
-alpha = 1.0 
-beta = 0.0
-
-P = 0.01#0.02
-I = 0.02#0.0005
-D = 0
-
-c0 = P + (I*Ts + D/Ts)
-c1 = -(P + 2*D/Ts)
-c2 = D/Ts
+c0 = usr_vals['P'] + (usr_vals['I']*usr_vals['Ts'] + usr_vals['D']/usr_vals['Ts'])
+c1 = -(usr_vals['P'] + 2*usr_vals['D']/usr_vals['Ts'])
+c2 = usr_vals['D']/usr_vals['Ts']
 
 if error_mode == "ratio":
-    error = NH4/(alpha*NO3)- beta - 1 #ratio should be equal to 1, therefore subtract by 1
+    error = NH4/(usr_vals['alpha']*NO3)- usr_vals['beta'] - 1 #ratio should be equal to 1, therefore subtract by 1
 else:
-    error = NH4 - (alpha*NO3) - beta #difference
+    error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
   
 DOsp = DOsp_1 + (error*c0 + error_1*c1 + error_2*c2) #note the negative gain of the process
 
 #Clipping of the control action according to the physical limiations system
-DOsp_min = 0.05 #s
-DOsp_max = 0.5
-DOsp = np.clip(DOsp, a_min=DOsp_min, a_max=DOsp_max)
+DOsp = np.clip(DOsp, a_min=usr_vals['DOsp_min'], a_max=usr_vals['DOsp_max'])
 
-DOsp_man = 0.2 #Manual mode setpoint
+DOsp_man = 0.1 #Manual mode setpoint
 if operating_mode == "auto":
     DOsp = DOsp
 else:
-    DOsp = DOsp_man
+    DOsp = usr_vals['DOsp_man']
 	
 if np.isnan(DOsp): #If for some reason the calculated value is NaN
     DOsp = DOsp_1
 
 #%% APPLY SETPOINT
 #Overwrite CSV file DO setpoints continuous DO control
-write_delay = 65
-write_time = datetime.datetime.now() + datetime.timedelta(seconds=write_delay)
+write_time = datetime.datetime.now() + datetime.timedelta(seconds=20) #delay at least 2 times the update rate SCADA reader.
+
+#write_delay = 5
+#write_time_red1 = datetime.datetime.now() + datetime.timedelta(seconds=write_delay)
+#write_time_red2 = write_time_red1 + datetime.timedelta(seconds=write_delay)
+#write_time_red3 = write_time_red2 + datetime.timedelta(seconds=write_delay)
 
 new_DOsp = pd.DataFrame(
     data={
@@ -185,7 +172,7 @@ new_DOsp = pd.DataFrame(
         }
     )
 
-with open(path_ctrlAction+'AIC_341_Data.csv', 'a', newline='') as f:
+with open(path_ctrlAction+'AIC_341_Data.csv', 'w', newline='') as f:
     new_DOsp.to_csv(f, index=False, header=False)
 
 #%% STORE INTERMEDIATE DATA LOCALLY
@@ -196,11 +183,11 @@ new_vals = pd.DataFrame(
         'DOsp_1':[round(DOsp,4)],
         'error_1':[round(error,4)],
         'error_2':[round(error_1,4)],
-        'NH4_1':[round(NH4,4)],
-        'NO3_1':[round(NO3,4)],
-        'P':[P],
-        'I':[I],
-        'D':[D],
+        'NH4':[round(NH4,4)],
+        'NO3':[round(NO3,4)],
+        'P':[usr_vals['P']],
+        'I':[usr_vals['I']],
+        'D':[usr_vals['D']],
         }
     )
 new_vals.set_index('datetime', drop=True, inplace=True)    
