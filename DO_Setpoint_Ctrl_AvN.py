@@ -91,7 +91,7 @@ yesterday = yesterdayTemp.strftime("%Y%m%d")
 
 #Try to get previous control values saved in an existing txt file of the same day
 try:    
-    stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_'+today+'.csv', sep=',')
+    stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_'+'.csv', sep=',')
     stored_vals.set_index('datetime', drop=True, inplace=True)
     DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
     error_1 = stored_vals['error_1'].iloc[-1]
@@ -108,7 +108,7 @@ try:
 except FileNotFoundError as e1:
     
     #Try to get previous control values saved in an existing txt file of the previous day
-    try: 
+    '''try: 
         stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_'+yesterday+'.csv', sep=',')
         stored_vals.set_index('datetime', drop=True, inplace=True)
         DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
@@ -116,29 +116,29 @@ except FileNotFoundError as e1:
         error_2 = stored_vals['error_2'].iloc[-1]
     
     #Create a new file where the previous control values will be saved
-    except FileNotFoundError as e2:
-        DOsp_1 = usr_vals['DOsp_1']
-        error_1 = usr_vals['error_1']
-        error_2 = usr_vals['error_2']
-        stored_vals = pd.DataFrame(
-            data={
-                'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-                'DOsp_1':usr_vals['DOsp_1'],
-                'error_1':usr_vals['error_1'],
-                'error_2':usr_vals['error_2'],
-                'NH4':usr_vals['NH4'],
-                'NO3':usr_vals['NO3'],
-                'P':usr_vals['P'],
-                'I':usr_vals['I'],
-                'D':usr_vals['D'],
-                'Cntrb. P':0,
-                'Cntrb. I':0,
-                'Cntrb. D':0,
-                }
-            )
-        stored_vals.set_index('datetime', inplace=True)
-        with open(path_intermData+'intermDataAvNCtrl_'+today+'.csv', 'a') as f:
-            stored_vals.to_csv(f, header=True)
+    except FileNotFoundError as e2:'''
+    DOsp_1 = usr_vals['DOsp_1']
+    error_1 = usr_vals['error_1']
+    error_2 = usr_vals['error_2']
+    stored_vals = pd.DataFrame(
+        data={
+            'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            'DOsp_1':usr_vals['DOsp_1'],
+            'error_1':usr_vals['error_1'],
+            'error_2':usr_vals['error_2'],
+            'NH4':usr_vals['NH4'],
+            'NO3':usr_vals['NO3'],
+            'P':usr_vals['P'],
+            'I':usr_vals['I'],
+            'D':usr_vals['D'],
+            'Cntrb. P':0,
+            'Cntrb. I':0,
+            'Cntrb. D':0,
+            }
+        )
+    stored_vals.set_index('datetime', inplace=True)
+    with open(path_intermData+'intermDataAvNCtrl_'+'.csv', 'a') as f:
+        stored_vals.to_csv(f, header=True)
 
 #%%  FILTER DATA
 #Filter the data to get a representative value for control action calculation
@@ -221,6 +221,6 @@ new_vals = pd.DataFrame(
     )
 new_vals.set_index('datetime', drop=True, inplace=True)    
 
-with open(path_intermData+'intermDataAvNCtrl_'+today+'.csv', 'a', newline='') as f:
+with open(path_intermData+'intermDataAvNCtrl_'+'.csv', 'a', newline='') as f:
     new_vals.to_csv(f, header=False)
     
