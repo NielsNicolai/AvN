@@ -85,9 +85,9 @@ df = df.replace(0.0, np.nan)
 
 #%%  GET INTERMEDIATE DATA STORED LOCALLY
 
-today = datetime.datetime.now().strftime("%Y%m%d")
-yesterdayTemp = datetime.datetime.now() - datetime.timedelta(days=1)
-yesterday = yesterdayTemp.strftime("%Y%m%d")
+#today = datetime.datetime.now().strftime("%Y%m%d")
+#yesterdayTemp = datetime.datetime.now() - datetime.timedelta(days=1)
+#yesterday = yesterdayTemp.strftime("%Y%m%d")
 
 #Try to get previous control values saved in an existing txt file of the same day
 try:    
@@ -117,15 +117,18 @@ except FileNotFoundError as e1:
     
     #Create a new file where the previous control values will be saved
     except FileNotFoundError as e2:'''
-    DOsp_1 = usr_vals['DOsp_1']
-    error_1 = usr_vals['error_1']
-    error_2 = usr_vals['error_2']
+    DOsp_1 = usr_vals['DOsp']
+    error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
+    error_2 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
+    
     stored_vals = pd.DataFrame(
         data={
             'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-            'DOsp_1':usr_vals['DOsp_1'],
-            'error_1':usr_vals['error_1'],
-            'error_2':usr_vals['error_2'],
+            'DOsp_1':usr_vals['DOsp'],
+            'Delta DOsp':0,
+            'error_1':error_1,
+            'error_2':error_2,
+            'Delta error':0,
             'NH4':usr_vals['NH4'],
             'NO3':usr_vals['NO3'],
             'P':usr_vals['P'],
@@ -207,8 +210,10 @@ new_vals = pd.DataFrame(
     data={
         'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
         'DOsp_1':[round(DOsp,4)],
+        'Delta DOsp': [round(DOsp-DOsp_1,4)],
         'error_1':[round(error,4)],
         'error_2':[round(error_1,4)],
+        'Delta error':[round(error-error_1,4)],
         'NH4':[round(NH4,4)],
         'NO3':[round(NO3,4)],
         'P':[usr_vals['P']],
@@ -219,7 +224,7 @@ new_vals = pd.DataFrame(
         'Cntrb. D':[round(cntrbD,4)],
         }
     )
-new_vals.set_index('datetime', drop=True, inplace=True)    
+new_vals.set_index('datetime', drop=True, inplace=True)  
 
 with open(path_intermData+'intermDataAvNCtrl_'+'.csv', 'a', newline='') as f:
     new_vals.to_csv(f, header=False)
