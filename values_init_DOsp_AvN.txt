@@ -3,9 +3,7 @@
 #Initialise measured variables
 "NH4" : 13,
 "NO3" : 9,
-"DOsp_1" : 0.3,
-"error_1" : 4,
-"error_2" : 4,
+"DOsp" : 0.3,
 
 #Filter length in minutes
 "lenFltr" : 1.0,
