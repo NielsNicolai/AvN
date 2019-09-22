@@ -1,8 +1,10 @@
+import connect_datEAUbase
+
 #Load data from datEAUbase
 def extract_AvN_from_db(start, end):
-    cursor, conn = connectDatEUAbase.create_connection()
-    Start = connectDatEUAbase.date_to_epoch(start)
-    End = connectDatEUAbase.date_to_epoch(end)
+    cursor, conn = connect_datEAUbase.create_connection()
+    Start = connect_datEAUbase.date_to_epoch(start)
+    End = connect_datEAUbase.date_to_epoch(end)
 
     #Define the requested parameters
     Project = 'pilEAUte'
@@ -23,7 +25,7 @@ def extract_AvN_from_db(start, end):
         }
 
     #Extract the data
-    df_db = connectDatEUAbase.extract_data(conn, extract_list)
+    df_db = connect_datEAUbase.extract_data(conn, extract_list)
 
     df_db.columns = [Location[i]+' '+param_list[i] for i in range(len(Location))]
 

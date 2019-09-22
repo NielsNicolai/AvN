@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+
 # Read data from the control files: Helper function
 def get_ctrl_data(files):
     ctrl_df = None

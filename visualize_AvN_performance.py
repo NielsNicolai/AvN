@@ -44,9 +44,14 @@ import sys
 #import functions to obtain data
 datEAUbase_path = '../datEAU_win/datEAU_filtering'
 sys.path.append(datEAUbase_path)
-import connectDatEUAbase
-import load_ANAPRO
-import load_controlFiles
+from connect_datEAUbase import *
+from load_datEAUbase import *
+from load_ANAPRO  import *
+from load_control_files import *
+
+#Define the period to be visualised
+start_date = "25 August 2019"
+end_date = "6 September 2019"
 
 # Extract data from the control files, specify file names manually
 files = ['data/DO00.csv','data/DO0.csv','data/DO1.csv', 'data/DO2.csv', 'data/DO3.csv']
@@ -55,8 +60,6 @@ ctrl_df.tail()
 
 # Extract data from the datEAUbase
 #Direct connection to detEAUbase
-start_date = "25 August 2019"
-end_date = "6 September 2019"
 df_db = extract_AvN_from_db(start_date, end_date)
 # Save the data to a csv file for later reuse
 # df_db.to_csv('dateaubase_data.csv')
