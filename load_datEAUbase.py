@@ -1,0 +1,33 @@
+#Load data from datEAUbase
+def extract_AvN_from_db(start, end):
+    cursor, conn = connectDatEUAbase.create_connection()
+    Start = connectDatEUAbase.date_to_epoch(start)
+    End = connectDatEUAbase.date_to_epoch(end)
+
+    #Define the requested parameters
+    Project = 'pilEAUte'
+    Location = ['Primary settling tank effluent','Pilote effluent','Pilote effluent', 'Pilote reactor 4', 'Copilote effluent','Copilote effluent', 'Copilote reactor 4']
+    param_list = ['NH4-N','NH4-N','NO3-N', 'DO', 'NH4-N','NO3-N', 'DO']
+    equip_list = ['Ammo_005','Varion_002', 'Varion_002', 'AIT-241', 'Varion_001', 'Varion_001', 'AIT-341']
+
+    #Extract the specified parameters from the datEAUbase
+    extract_list={}
+    for i in range(len(param_list)):
+        extract_list[i] = {
+            'Start':Start,
+            'End':End,
+            'Project':Project,
+            'Location':Location[i],
+            'Parameter':param_list[i],
+            'Equipment':equip_list[i]
+        }
+
+    #Extract the data
+    df_db = connectDatEUAbase.extract_data(conn, extract_list)
+
+    df_db.columns = [Location[i]+' '+param_list[i] for i in range(len(Location))]
+
+    # Adjust the values with regards to the units
+    df_db = df_db*1000
+    
+    return df_db
