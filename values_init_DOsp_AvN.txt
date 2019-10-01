@@ -1,19 +1,31 @@
 { 
 
 #Initialise measured variables
+<<<<<<< HEAD
 "NH4" : 14,
 "NO3" : 12,
 "DOsp" : 0.35,
+=======
+"NH4" : 11.2793,
+"NO3" : 8.6007,
+"DOsp" : 0.4,
+>>>>>>> 92dcb06fde513ab4ec1a7ac8551b3800a17c4127
 
 #Filter length in minutes
 "lenFltr" : 1.0,
 
 #PID control parameters
 "Ts" : 1.0,
+<<<<<<< HEAD
 "P" : 0.100,
 "I" : 0.0005,
 "D" : 0, #0.03,
 "N" : 100,
+=======
+"P" : 0.175,
+"I" : 0.00075,
+"D" : 0.03,
+>>>>>>> 92dcb06fde513ab4ec1a7ac8551b3800a17c4127
 
 #AvN parameters
 "alpha" : 1.0,
@@ -21,7 +33,7 @@
 
 #Setpoint constraints
 "DOsp_min" : 0.02,
-"DOsp_max" : 0.35,
+"DOsp_max" : 0.40,
 
 #Manual value setpoint in case of error
 "DOsp_man" : 0.1,
