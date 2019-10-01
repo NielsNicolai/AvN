@@ -31,11 +31,11 @@ if PC_name == 'MODELEAU':
     path_usrVals = 'C:/Users/Admin/Documents/Python Scripts/AvN Control/'
 elif PC_name == 'GCI-MODELEAU-08':
     #Define in which folder the intermediate data is stored
-    path_intermData = 'C:/Users/NINIC2/Documents/Python Scripts/'
+    path_intermData = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
     #Define in which folder the final control action is stored
-    path_ctrlAction = 'C:/Users/NINIC2/Documents/Python Scripts/'
+    path_ctrlAction = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
     #Define in which folder the user defined variables are found
-    path_usrVals = 'C:/Users/NINIC2/Documents/Python Scripts/'
+    path_usrVals = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
 else:
     print('Add directories to PATH')
     exit()
@@ -77,11 +77,18 @@ for i in range(len(param_list)):
 #Create a new pandas dataframe
 #print('ready to extract')
 df = extract_data(conn, extract_list)
+
+i = 1
+while df.empty and i < 10:
+    df = extract_data(conn, extract_list)
+    i += 1
+
 df.columns = param_list
 df = df*1000 #set the units correctly to mg/L
 
 #Replace all zero values for NaNs
 df = df.replace(0.0, np.nan)
+df = df.dropna()
 
 #%%  GET INTERMEDIATE DATA STORED LOCALLY
 
@@ -96,6 +103,9 @@ try:
     DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
     error_1 = stored_vals['error_1'].iloc[-1]
     error_2 = stored_vals['error_2'].iloc[-1]
+    PID_P_1 = stored_vals['Cntrb. P'].iloc[-1]
+    PID_I_1 = stored_vals['Cntrb. I'].iloc[-1]
+    PID_D_1 = stored_vals['Cntrb. D'].iloc[-1]
 
     #Prevent errors when database read communication results in NaN
     i = 2
@@ -103,6 +113,9 @@ try:
            DOsp_1  = stored_vals['DOsp_1'].iloc[-i]
            error_1 = stored_vals['error_1'].iloc[-i]
            error_2 = stored_vals['error_2'].iloc[-i]
+           PID_P_1 = stored_vals['Cntrb. P'].iloc[-i]
+           PID_I_1 = stored_vals['Cntrb. I'].iloc[-i]
+           PID_D_1 = stored_vals['Cntrb. D'].iloc[-i]
 
 #Catch error if file is not existing              
 except FileNotFoundError as e1:
@@ -119,29 +132,33 @@ except FileNotFoundError as e1:
     except FileNotFoundError as e2:'''
     DOsp_1 = usr_vals['DOsp']
     error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
-    error_2 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
+    error_2 = error_1
+    PID_P_1 = 0
+    PID_I_1 = 0
+    PID_D_1 = 0
+
     
     stored_vals = pd.DataFrame(
         data={
             'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
             'DOsp_1':usr_vals['DOsp'],
-            'Delta DOsp':0,
             'error_1':error_1,
             'error_2':error_2,
-            'Delta error':0,
             'NH4':usr_vals['NH4'],
             'NO3':usr_vals['NO3'],
             'P':usr_vals['P'],
             'I':usr_vals['I'],
             'D':usr_vals['D'],
-            'Cntrb. P':0,
-            'Cntrb. I':0,
-            'Cntrb. D':0,
+            'Cntrb. P':PID_P_1,
+            'Cntrb. I':PID_I_1,
+            'Cntrb. D':PID_D_1,
             }
         )
     stored_vals.set_index('datetime', inplace=True)
     with open(path_intermData+'intermDataAvNCtrl_'+'.csv', 'a') as f:
         stored_vals.to_csv(f, header=True)
+
+
 
 #%%  FILTER DATA
 #Filter the data to get a representative value for control action calculation
@@ -151,38 +168,65 @@ NFltr = round(usr_vals['lenFltr']*Fs) #filter length in minutes
 NH4 = df['NH4-N'].iloc[-NFltr:].mean()
 NO3 = df['NO3-N'].iloc[-NFltr:].mean()
 
-#%%  PID CONTROL
-#PID control action calculation using filtered value
-error_mode = "diff" #Determines the way the AvN error is calculated: "ratio" or "diff"
-operating_mode = "auto" #Determines the operating mode of the controller: "man" or "auto"
+#%% POSITIONAL PID ALGORITHM + ANTI-RESET WINDUP
+#PID controller according to K. Astrom - Control System Design - 2002 
+#Forward Euler for the integral term; Backward Euler for the derivative term
+#Anti-windup strategy using back-calculation
+#Filtered derivative action using a low pass filter with filter coeff N
+#Without setpoint weighing (reason: AvN setpoint is fixed to 0)
 
-c0 = usr_vals['P'] + (usr_vals['I']*usr_vals['Ts'] + usr_vals['D']/usr_vals['Ts'])
-c1 = -(usr_vals['P'] + 2*usr_vals['D']/usr_vals['Ts'])
-c2 = usr_vals['D']/usr_vals['Ts']
+#Calculate the error
+error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
 
-if error_mode == "ratio":
-    error = NH4/(usr_vals['alpha']*NO3)- usr_vals['beta'] - 1 #ratio should be equal to 1, therefore subtract by 1
+#Recalculate control parameters
+#Sampling time
+h = usr_vals['Ts']
+
+#Proportional action
+K = usr_vals['P']
+
+#Integral action
+if usr_vals['I'] != 0: #Make sure not to divide by 0
+	Ti = usr_vals['P']/usr_vals['I'] 
 else:
-    error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
-  
-DOsp = DOsp_1 + (error*c0 + error_1*c1 + error_2*c2) #note the positive gain of the process
+	Ti = 999999
 
-#Calculate the contributions of each term in the PID control law
-cntrbP = error*usr_vals['P']-error_1*usr_vals['P']
-cntrbI = error*usr_vals['I']*usr_vals['Ts']
-cntrbD = error*usr_vals['D']/usr_vals['Ts']-error_1*2*usr_vals['D']/usr_vals['Ts']+error_2*usr_vals['D']/usr_vals['Ts']
-
-#Clipping of the control action according to the physical limiations system
-DOsp = np.clip(DOsp, a_min=usr_vals['DOsp_min'], a_max=usr_vals['DOsp_max'])
-
-DOsp_man = 0.1 #Manual mode setpoint
-if operating_mode == "auto":
-    DOsp = DOsp
+#Derivative action
+if usr_vals['P'] != 0:
+	Td = usr_vals['D']/usr_vals['P']
 else:
-    DOsp = usr_vals['DOsp_man']
-	
-if np.isnan(DOsp): #If for some reason the calculated value is NaN
+	Td = 0
+
+if Td != 0: #Tracking time constant for anti-windup back-calculation
+	Tt = (Ti*Td)**0.5
+else:
+	Tt = Ti
+    
+N = usr_vals['N'] #Derivative LPF filter coefficient (the higher the less filtering)
+
+#Compute control coefficients
+int_coeff_1 = K*h/Ti
+int_coeff_2 = h/Tt
+dif_coeff_1 = (2*Td-N*h)/(2*Td+N*h)
+dif_coeff_2 = 2*K*N*Td/(2*Td+N*h)
+
+#Control action calculation
+PID_P = K*error
+PID_D = (dif_coeff_1*PID_D_1)-(dif_coeff_2*(error-error_1))
+
+if Td == 0:
+    PID_D = 0
+
+DOsp_uncstrnd = PID_P+PID_I_1+PID_D
+DOsp = np.clip(DOsp_uncstrnd, a_min=usr_vals['DOsp_min'], a_max=usr_vals['DOsp_max'])
+
+#If for some reason the calculated values are NaNs
+if np.isnan(DOsp) | np.isnan(DOsp_uncstrnd): 
     DOsp = DOsp_1
+    DOsp_uncstrnd = DOsp_1
+
+#Update integral action: Forward Euler integration taking into account reset windup
+PID_I = PID_I_1 + int_coeff_1*error + int_coeff_2*(DOsp-DOsp_uncstrnd)
 
 #%% APPLY SETPOINT
 #Overwrite CSV file DO setpoints continuous DO control
@@ -210,18 +254,16 @@ new_vals = pd.DataFrame(
     data={
         'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
         'DOsp_1':[round(DOsp,4)],
-        'Delta DOsp': [round(DOsp-DOsp_1,4)],
         'error_1':[round(error,4)],
         'error_2':[round(error_1,4)],
-        'Delta error':[round(error-error_1,4)],
         'NH4':[round(NH4,4)],
         'NO3':[round(NO3,4)],
         'P':[usr_vals['P']],
         'I':[usr_vals['I']],
         'D':[usr_vals['D']],
-        'Cntrb. P':[round(cntrbP,4)],
-        'Cntrb. I':[round(cntrbI,4)],
-        'Cntrb. D':[round(cntrbD,4)],
+        'Cntrb. P':[round(PID_P,4)],
+        'Cntrb. I':[round(PID_I,4)],
+        'Cntrb. D':[round(PID_D,4)],
         }
     )
 new_vals.set_index('datetime', drop=True, inplace=True)  
