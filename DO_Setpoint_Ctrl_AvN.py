@@ -14,6 +14,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import os
+import time
 #import definitions_AvN 
 
 from connectDatEUAbase import *
@@ -78,10 +79,11 @@ for i in range(len(param_list)):
 #print('ready to extract')
 df = extract_data(conn, extract_list)
 
-i = 1
-while df.empty and i < 10:
+j = 1
+while df.empty and j < 10:
     df = extract_data(conn, extract_list)
-    i += 1
+    time.sleep(j*0.5) #delay next reading
+    j += 1
 
 df.columns = param_list
 df = df*1000 #set the units correctly to mg/L
@@ -108,14 +110,15 @@ try:
     PID_D_1 = stored_vals['Cntrb. D'].iloc[-1]
 
     #Prevent errors when database read communication results in NaN
-    i = 2
-    if np.isnan(DOsp_1) or np.isnan(error_1):
-           DOsp_1  = stored_vals['DOsp_1'].iloc[-i]
-           error_1 = stored_vals['error_1'].iloc[-i]
-           error_2 = stored_vals['error_2'].iloc[-i]
-           PID_P_1 = stored_vals['Cntrb. P'].iloc[-i]
-           PID_I_1 = stored_vals['Cntrb. I'].iloc[-i]
-           PID_D_1 = stored_vals['Cntrb. D'].iloc[-i]
+    l = 2
+    while (np.isnan(DOsp_1) or np.isnan(error_1) or np.isnan(PID_P_1) or np.isnan(PID_I_1) or np.isnan(PID_D_1)) and l < 10:
+           DOsp_1  = stored_vals['DOsp_1'].iloc[-l]
+           error_1 = stored_vals['error_1'].iloc[-l]
+           error_2 = stored_vals['error_2'].iloc[-l]
+           PID_P_1 = stored_vals['Cntrb. P'].iloc[-l]
+           PID_I_1 = stored_vals['Cntrb. I'].iloc[-l]
+           PID_D_1 = stored_vals['Cntrb. D'].iloc[-l]
+           l += 1
 
 #Catch error if file is not existing              
 except FileNotFoundError as e1:
@@ -217,7 +220,18 @@ PID_D = (dif_coeff_1*PID_D_1)-(dif_coeff_2*(error-error_1))
 if Td == 0:
     PID_D = 0
 
+#Sanity check of the PID terms in case nan comes up (Should already be cached when reading stored values for multiple times)
+if np.isnan(PID_P):
+    PID_P = 0
+if np.isnan(PID_I_1):
+    PID_I_1 = 0  
+if np.isnan(PID_D):
+    PID_D = 0
+
+#Summation of each of the PID terms
 DOsp_uncstrnd = PID_P+PID_I_1+PID_D
+
+#Limit the DO setpoint
 DOsp = np.clip(DOsp_uncstrnd, a_min=usr_vals['DOsp_min'], a_max=usr_vals['DOsp_max'])
 
 #If for some reason the calculated values are NaNs
