@@ -114,7 +114,7 @@ try:
     while (np.isnan(DOsp_1) or np.isnan(error_1) or np.isnan(PID_P_1) or np.isnan(PID_I_1) or np.isnan(PID_D_1)) and l < 10:
            DOsp_1  = stored_vals['DOsp_1'].iloc[-l]
            error_1 = stored_vals['error_1'].iloc[-l]
-           error_2 = stored_vals['error_2'].iloc[-l-1]
+           error_2 = stored_vals['error_1'].iloc[-l-1]
            PID_P_1 = stored_vals['Cntrb. P'].iloc[-l]
            PID_I_1 = stored_vals['Cntrb. I'].iloc[-l]
            PID_D_1 = stored_vals['Cntrb. D'].iloc[-l]
