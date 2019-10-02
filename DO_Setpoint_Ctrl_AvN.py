@@ -104,7 +104,7 @@ try:
     stored_vals.set_index('datetime', drop=True, inplace=True)
     DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
     error_1 = stored_vals['error_1'].iloc[-1]
-    error_2 = stored_vals['error_2'].iloc[-1]
+    error_2 = stored_vals['error_1'].iloc[-2]
     PID_P_1 = stored_vals['Cntrb. P'].iloc[-1]
     PID_I_1 = stored_vals['Cntrb. I'].iloc[-1]
     PID_D_1 = stored_vals['Cntrb. D'].iloc[-1]
@@ -114,7 +114,7 @@ try:
     while (np.isnan(DOsp_1) or np.isnan(error_1) or np.isnan(PID_P_1) or np.isnan(PID_I_1) or np.isnan(PID_D_1)) and l < 10:
            DOsp_1  = stored_vals['DOsp_1'].iloc[-l]
            error_1 = stored_vals['error_1'].iloc[-l]
-           error_2 = stored_vals['error_2'].iloc[-l]
+           error_2 = stored_vals['error_2'].iloc[-l-1]
            PID_P_1 = stored_vals['Cntrb. P'].iloc[-l]
            PID_I_1 = stored_vals['Cntrb. I'].iloc[-l]
            PID_D_1 = stored_vals['Cntrb. D'].iloc[-l]
@@ -129,7 +129,6 @@ except FileNotFoundError as e1:
         stored_vals.set_index('datetime', drop=True, inplace=True)
         DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
         error_1 = stored_vals['error_1'].iloc[-1]
-        error_2 = stored_vals['error_2'].iloc[-1]
     
     #Create a new file where the previous control values will be saved
     except FileNotFoundError as e2:'''
@@ -146,7 +145,6 @@ except FileNotFoundError as e1:
             'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
             'DOsp_1':usr_vals['DOsp'],
             'error_1':error_1,
-            'error_2':error_2,
             'NH4':usr_vals['NH4'],
             'NO3':usr_vals['NO3'],
             'P':usr_vals['P'],
@@ -242,6 +240,10 @@ if np.isnan(DOsp) | np.isnan(DOsp_uncstrnd):
 #Update integral action: Forward Euler integration taking into account reset windup
 PID_I = PID_I_1 + int_coeff_1*error + int_coeff_2*(DOsp-DOsp_uncstrnd)
 
+#Sanity check of the I term in case nan comes up (Should already be cached when reading stored values for multiple times)
+if np.isnan(PID_I):
+    PID_I = 0
+
 #%% APPLY SETPOINT
 #Overwrite CSV file DO setpoints continuous DO control
 write_time = datetime.datetime.now() + datetime.timedelta(seconds=20) #delay at least 2 times the update rate SCADA reader.
@@ -269,7 +271,6 @@ new_vals = pd.DataFrame(
         'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
         'DOsp_1':[round(DOsp,4)],
         'error_1':[round(error,4)],
-        'error_2':[round(error_1,4)],
         'NH4':[round(NH4,4)],
         'NO3':[round(NO3,4)],
         'P':[usr_vals['P']],
