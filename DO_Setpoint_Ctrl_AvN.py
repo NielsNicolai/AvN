@@ -201,7 +201,7 @@ else:
 if Td != 0: #Tracking time constant for anti-windup back-calculation
 	Tt = Ti/2#(Ti*Td)**0.5
 else:
-	Tt = Ti
+	Tt = Ti/2
     
 N = usr_vals['N'] #Derivative LPF filter coefficient (the higher the less filtering)
 
