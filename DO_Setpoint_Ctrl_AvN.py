@@ -199,7 +199,7 @@ else:
 	Td = 0
 
 if Td != 0: #Tracking time constant for anti-windup back-calculation
-	Tt = (Ti*Td)**0.5
+	Tt = Ti/2#(Ti*Td)**0.5
 else:
 	Tt = Ti
     
