@@ -226,7 +226,7 @@ if Td == 0:
 if np.isnan(PID_P):
     PID_P = 0
 if np.isnan(PID_I_1):
-    PID_I_1 = 0  
+    PID_I_1 = 0.1  
 if np.isnan(PID_D):
     PID_D = 0
 
@@ -280,9 +280,9 @@ new_vals = pd.DataFrame(
         'P':[usr_vals['P']],
         'I':[usr_vals['I']],
         'D':[usr_vals['D']],
-        'Cntrb. P':[round(PID_P,4)],
-        'Cntrb. I':[round(PID_I,4)],
-        'Cntrb. D':[round(PID_D,4)],
+        'Cntrb. P':[round(PID_P,5)],
+        'Cntrb. I':[round(PID_I,5)],
+        'Cntrb. D':[round(PID_D,5)],
         }
     )
 new_vals.set_index('datetime', drop=True, inplace=True)  
