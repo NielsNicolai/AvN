@@ -78,7 +78,6 @@ try:
 
 #Catch error if file is not existing              
 except FileNotFoundError as e:
-    DOsp = 0
     DOsp_1 = 0
     fAE_1 = usr_vals['fAE']
     error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
@@ -86,7 +85,6 @@ except FileNotFoundError as e:
     PID_P_1 = 0
     PID_I_1 = 0
     PID_D_1 = 0
-    tAE = 0
     tAE_1 = 0
     counter_1 = usr_vals['Tc']-2*usr_vals['Ts']
     
@@ -123,11 +121,11 @@ if counter >= usr_vals['Tc']:
 
 #%% APPLY THE CORRECT DO SETPOINT DEPENDING ON THE PHASE WITHIN THE CYCLE
 #Aerobic phase
-if counter >= tAE:
+if counter >= tAE_1:
     DOsp = 0
 
 #Anoxic phase
-elif counter < tAE:
+elif counter < tAE_1:
     DOsp = usr_vals['DOsp']
     
 write_time_1 = datetime.datetime.now() + datetime.timedelta(seconds=20)
