@@ -1,0 +1,31 @@
+{ 
+#Initialise measured variables
+"NH4" : 14,
+"NO3" : 12,
+"fAE" : 0.5,
+
+#Aerobic time specific parameters
+"DOsp" : 2.0,
+"Tc" : 10,
+
+#Filter length in minutes
+"lenFltr" : 1.0,
+
+#PID control parameters
+"Ts" : 1.0,
+"P" : 0.100,
+"I" : 0.010,
+"D" : 0,
+"N" : 100,
+
+#AvN parameters
+"alpha" : 1.0,
+"beta" : 0.0,
+
+#Setpoint constraints
+"fAE_min" : 0.05,
+"fAE_max" : 0.95,
+
+#Manual value setpoint in case of error
+"fAE_man" : 0.1,
+}
