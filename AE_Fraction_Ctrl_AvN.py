@@ -241,8 +241,8 @@ if counter == usr_vals['Tc']-1*usr_vals['Ts']:
 	#dif_coeff_1 = (2*Td-N*h)/(2*Td+N*h)
 	#dif_coeff_2 = 2*K*N*Td/(2*Td+N*h)
 	#According to scilab:
-	dif_coeff_1 = Td/(Td+h*N) #scilab
-	dif_coeff_2 = -Td*K*N/(Td+N*h)
+    dif_coeff_1 = Td/(Td+h*N) #scilab
+    dif_coeff_2 = -Td*K*N/(Td+N*h)
     
     #Control action calculation
     PID_P = K*error
