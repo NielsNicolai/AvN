@@ -78,6 +78,7 @@ try:
 
 #Catch error if file is not existing              
 except FileNotFoundError as e:
+    DOsp = 0
     DOsp_1 = 0
     fAE_1 = usr_vals['fAE']
     error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
@@ -85,13 +86,14 @@ except FileNotFoundError as e:
     PID_P_1 = 0
     PID_I_1 = 0
     PID_D_1 = 0
+    tAE = 0
     tAE_1 = 0
     counter_1 = usr_vals['Tc']-2*usr_vals['Ts']
     
     stored_vals = pd.DataFrame(
         data={
             'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-            'DOsp':[DOsp],
+            'DOsp':DOsp_1,
             'fAE':usr_vals['fAE'],
             'error_1':error_1,
             'NH4':usr_vals['NH4'],
