@@ -100,7 +100,7 @@ df = df.dropna()
 
 #Try to get previous control values saved in an existing txt file of the same day
 try:    
-    stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_'+'.csv', sep=',')
+    stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_DO'+'.csv', sep=',')
     stored_vals.set_index('datetime', drop=True, inplace=True)
     DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
     error_1 = stored_vals['error_1'].iloc[-1]
@@ -125,7 +125,7 @@ except FileNotFoundError as e1:
     
     #Try to get previous control values saved in an existing txt file of the previous day
     '''try: 
-        stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_'+yesterday+'.csv', sep=',')
+        stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_DO'+yesterday+'.csv', sep=',')
         stored_vals.set_index('datetime', drop=True, inplace=True)
         DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
         error_1 = stored_vals['error_1'].iloc[-1]
@@ -156,7 +156,7 @@ except FileNotFoundError as e1:
             }
         )
     stored_vals.set_index('datetime', inplace=True)
-    with open(path_intermData+'intermDataAvNCtrl_'+'.csv', 'a') as f:
+    with open(path_intermData+'intermDataAvNCtrl_DO'+'.csv', 'a') as f:
         stored_vals.to_csv(f, header=True)
 
 
@@ -287,6 +287,6 @@ new_vals = pd.DataFrame(
     )
 new_vals.set_index('datetime', drop=True, inplace=True)  
 
-with open(path_intermData+'intermDataAvNCtrl_'+'.csv', 'a', newline='') as f:
+with open(path_intermData+'intermDataAvNCtrl_DO'+'.csv', 'a', newline='') as f:
     new_vals.to_csv(f, header=False)
     
