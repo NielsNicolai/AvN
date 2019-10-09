@@ -50,7 +50,7 @@ with open(path_usrVals+'values_init_DOsp_AvN.txt') as f:
 cursor, conn = create_connection()
 
 #Get measurement data over a specific interval
-intrvl = 3 #minutes
+intrvl = 5 #minutes
 delay = 2 #minutes
 stopDateTime = datetime.datetime.now() - datetime.timedelta(hours=0, minutes=delay, seconds=0)
 startDateTime = stopDateTime - datetime.timedelta(hours=0, minutes=intrvl, seconds=0)
