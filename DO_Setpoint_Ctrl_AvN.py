@@ -136,7 +136,7 @@ except FileNotFoundError as e1:
     error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
     error_2 = error_1
     PID_P_1 = 0
-    PID_I_1 = 0
+    PID_I_1 = 0.15
     PID_D_1 = 0
 
     
