@@ -226,7 +226,7 @@ if Td == 0:
 if np.isnan(PID_P):
     PID_P = 0
 if np.isnan(PID_I_1):
-    PID_I_1 = 0.1  
+    PID_I_1 = 0.15  
 if np.isnan(PID_D):
     PID_D = 0
 
@@ -246,7 +246,7 @@ PID_I = PID_I_1 + int_coeff_1*error + int_coeff_2*(DOsp-DOsp_uncstrnd)
 
 #Sanity check of the I term in case nan comes up (Should already be cached when reading stored values for multiple times)
 if np.isnan(PID_I):
-    PID_I = 0
+    PID_I = 0.15
 
 #%% APPLY SETPOINT
 #Overwrite CSV file DO setpoints continuous DO control
