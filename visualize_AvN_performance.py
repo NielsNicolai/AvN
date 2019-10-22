@@ -52,7 +52,7 @@ from load_control_files import *
 #%% USER INPUT
 
 #Define which reactor is needed (Pilote or Copilote)
-reactor = 'Pilote'
+reactor = 'Copilote'
 
 #Define the period to be visualised
 start_date = "18 October 2019"
@@ -68,11 +68,11 @@ file_lab = []
 file_HTML = 'AvNdata_Meeting_'+datetime.datetime.now().strftime('%y%m%d')+'_'+reactor+'.html'
 
 #Specify default plot ranges
-range_influent = [10, 50]
-range_effluent = [0, 20]
+range_influent = []#[10, 50]
+range_effluent = []#[0, 20]
 range_AvN = [0, 5]
-range_aeration = [0.0, 2.00]
-range_airflow =[0.0, 1000]
+range_aeration = [0.0, 2.0]#[0.0, 2.00]
+range_airflow = []#[0.0, 1000]
 
 #%% DATA EXTRACTION
 
@@ -299,9 +299,9 @@ fig.add_trace(
         x=df.index,
         y=df[reactor+' reactor 4 DO'],
         name = 'DO tank 5',
-        mode='markers',
+        mode='lines+markers',
         legendgroup='leg4',
-        opacity=0.3,
+        opacity=0.5,
         marker=dict(
             color='rgb(255, 153, 0)',
             size=3,
@@ -316,16 +316,13 @@ fig.add_trace(
         x=df.index,
         y=df[reactor+' reactor 4 Flowrate (Gas)'],
         name = 'Air flow rate tank 5', #note that physically MFC 4 and 5 are switched
-        mode='lines+markers',
+        mode='markers',
         legendgroup='leg5',
         connectgaps=True,
         marker=dict(
             color='rgb(213, 52, 235)',
             size=3,
         ),
-        line=dict(
-            shape='hv'
-        )
     ),
     row=5, col=1
 )
@@ -359,27 +356,34 @@ fig.update_yaxes(
 fig.update_layout(
 	# Change dimensions according to desired screen resolution
     height=925, #height=1030,
-    width=1340, #width=1660,
+    width=1400, #width=1660,
     title_text="AvN performance: <b>"+reactor,
     legend_orientation="h",
-    font=dict(size=12),
+    font=dict(size=13),
 )
+
+# Sbplot specific layouts
+fig.update_yaxes(title_text="[mg/L]", title_font=dict(size=14), row=1, col=1)
+fig.update_yaxes(title_text="[mg/L]", title_font=dict(size=14), row=2, col=1)
+fig.update_yaxes(title_text="[-]", title_font=dict(size=14), row=3, col=1)
+fig.update_yaxes(title_text="[mg/L]", title_font=dict(size=14), row=4, col=1)
+fig.update_yaxes(title_text="[L/min]", title_font=dict(size=14), row=5, col=1)
+
+# Adjust ranges if requested
+if range_influent: fig.update_yaxes(range=range_influent, row=1, col=1)
+if range_effluent: fig.update_yaxes(range=range_effluent, row=2, col=1)
+if range_AvN: fig.update_yaxes(range=range_AvN, row=3, col=1)
+if range_aeration: fig.update_yaxes(range=range_aeration, nticks=6, row=4, col=1)  
+if range_airflow: fig.update_yaxes(range=range_airflow, row=5, col=1)
 
 # Add the modelEAU logo
 fig.layout.images = [dict(
         source="https://pbs.twimg.com/profile_images/723538279644147712/JnZh9k7P.jpg",
         xref="paper", yref="paper",
         x=0.9, y=-0.2,
-        sizex=0.175, sizey=0.175,
+        sizex=0.150, sizey=0.150,
         xanchor="left", yanchor="bottom"
       )]
-    
-# Sbplot specific layouts
-fig.update_yaxes(title_text="[mg/L]", title_font=dict(size=12), range=range_influent, row=1, col=1)
-fig.update_yaxes(title_text="[mg/L]", title_font=dict(size=12), range=range_effluent, row=2, col=1)
-fig.update_yaxes(title_text="[-]", title_font=dict(size=12), range=range_AvN, row=3, col=1)
-fig.update_yaxes(title_text="[mg/L]", title_font=dict(size=12), range=range_aeration, nticks=6, row=4, col=1)
-fig.update_yaxes(title_text="[L/min]", title_font=dict(size=12), range=range_airflow, row=5, col=1)
 
 # Add annotations to keep track of events
 '''
@@ -403,11 +407,11 @@ fig.update_layout(
 '''
 
 #Show figure in default renderer
-#fig.show()
+fig.show()
 
 #%% SAVE FIGURE AS A HTML FILE
 
-pio.write_html(fig, file=file_HTML, auto_open=True)
+pio.write_html(fig, file=file_HTML, auto_open=False)
 
 
 
