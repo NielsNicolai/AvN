@@ -1,0 +1,9 @@
+__pycache__/connectDatEUAbase.cpython-37.pyc
+.DS_Store
+*.svg
+*.pyc
+
+values_init_DOsp_AvN.txt
+values_init_fAE_AvN.txt
+
+data/
