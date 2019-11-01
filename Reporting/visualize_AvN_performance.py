@@ -41,6 +41,9 @@ import datetime
 import scipy.io
 import sys
 
+import os
+import errno
+
 #import functions to obtain data
 datEAUbase_path = '../datEAU_win/datEAU_filtering'
 sys.path.append(datEAUbase_path)
@@ -411,7 +414,15 @@ fig.show()
 
 #%% SAVE FIGURE AS A HTML FILE
 
-pio.write_html(fig, file=file_HTML, auto_open=False)
+filename = os.getcwd()+"\\HTML reports\\"+ datetime.datetime.now().strftime('%y%m%d') + "\\" + file_HTML
+if not os.path.exists(os.path.dirname(filename)):
+    try:
+        os.makedirs(os.path.dirname(filename))
+    except OSError as exc: # Guard against race condition
+        if exc.errno != errno.EEXIST:
+            raise
+
+pio.write_html(fig, file=filename, auto_open=False)
 
 
 
