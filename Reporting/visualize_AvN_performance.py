@@ -51,6 +51,7 @@ from connect_datEAUbase import *
 from load_datEAUbase import *
 from load_ANAPRO  import *
 from load_control_files import *
+from load_SC1000 import *
 
 #%% USER INPUT
 
@@ -66,6 +67,9 @@ files_ctrl = ['HTML reports/191105/intermDataAvNCtrl_fAE_20191104_30-01.csv'] #[
 
 #Define the name and location of the files generated in lab
 file_lab = []
+
+#Define the name and location of the SC1000 files: e.g. LDO in tank 4
+files_SC1000 = ['HTML reports/191105/LDO250.csv','HTML reports/191105/LDO350.csv']
 
 #Define the name of the output HTML file
 file_HTML = 'AvNdata_Meeting_'+datetime.datetime.now().strftime('%y%m%d')+'_'+reactor+'.html'
@@ -93,14 +97,23 @@ else:
     
 # Extract data from lab data files
 if file_lab:
-    # Extract data from the control files
+    # Extract data from the lab files
     df_lab = pd.read_csv(files_lab, index_col='datetime')
     # Bring the different data sources together
     df_db_ctrl_lab = df_db_ctrl.join(df_lab, how='outer')
 else:
     df_db_ctrl_lab = df_db_ctrl
+    
+#Extract data from SC1000 files
+if files_SC1000:
+    #Extract data from SC1000 files
+    df_SC1000 = get_SC1000_data(files_SC1000)
+    # Bring the different data sources together
+    df_db_ctrl_lab_SC1000 = df_db_ctrl_lab.join(df_SC1000, how='outer')
+else:
+    df_db_ctrl_lab_SC1000 = df_db_ctrl_lab
 
-df = df_db_ctrl_lab
+df = df_db_ctrl_lab_SC1000
 
 # Calculate the NH4-N to NH3-N ratio for the Pilote and Copilote
 df['Pilote ratio'] = df['Pilote effluent NH4-N']/df['Pilote effluent NO3-N']

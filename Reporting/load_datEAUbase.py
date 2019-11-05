@@ -8,9 +8,9 @@ def extract_AvN_from_db(start, end):
 
     #Define the requested parameters
     Project = 'pilEAUte'
-    Location = ['Primary settling tank effluent','Pilote effluent','Pilote effluent', 'Pilote reactor 4', 'Pilote reactor 4', 'Copilote effluent','Copilote effluent', 'Copilote reactor 4','Copilote reactor 4']
-    param_list = ['NH4-N','NH4-N','NO3-N', 'DO', 'Flowrate (Gas)', 'NH4-N','NO3-N', 'DO', 'Flowrate (Gas)']
-    equip_list = ['Ammo_005','Varion_002', 'Varion_002', 'AIT-241', 'FIT-420', 'Varion_001', 'Varion_001', 'AIT-341', 'FIT-450']
+    Location = ['Primary settling tank effluent','Pilote effluent','Pilote effluent', 'Pilote reactor 4', 'Pilote reactor 5', 'Pilote reactor 4', 'Copilote effluent','Copilote effluent', 'Copilote reactor 4', 'Pilote reactor 5', 'Copilote reactor 4']
+    param_list = ['NH4-N','NH4-N','NO3-N', 'DO', 'DO', 'Flowrate (Gas)', 'NH4-N','NO3-N', 'DO', 'DO', 'Flowrate (Gas)']
+    equip_list = ['Ammo_005','Varion_002', 'Varion_002', 'AIT-241', 'AIT-251', 'FIT-420', 'Varion_001', 'Varion_001', 'AIT-341', 'AIT-351', 'FIT-450']
 
     #Extract the specified parameters from the datEAUbase
     extract_list={}
