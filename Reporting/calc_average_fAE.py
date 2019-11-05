@@ -6,6 +6,7 @@ Created on Mon Nov  4 14:05:52 2019
 """
 import numpy as np
 import pandas as pd
+import datetime
 from connect_datEAUbase import *
 
 def calc_average(df_column, treshold):
@@ -15,7 +16,8 @@ def calc_average(df_column, treshold):
     var = var_temp.tolist()
         
     #Get timestamp as a list
-    time_temp = var_temp.reset_index().datetime
+    time_temp = var_temp.reset_index()
+    time_temp = time_temp['index']
     time = [date_to_epoch(date) for date in time_temp]
     
     #Get indexes of the values above treshold
