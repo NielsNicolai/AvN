@@ -34,13 +34,13 @@ if PC_name == 'MODELEAU':
     path_usrVals = 'C:/Users/Admin/Documents/Python Scripts/AvN Control/'
 elif PC_name == 'GCI-MODELEAU-08':
     #Define in which folder the intermediate data is stored
-    path_intermData = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_intermData = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/Data/'
     #Define in which folder the control scripts is stored
-    path_controller = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_controller = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/'
     #Define in which folder the final control action is stored
-    path_ctrlAction = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_ctrlAction = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/Data/'
     #Define in which folder the user defined variables are found
-    path_usrVals = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_usrVals = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/'
 else:
     print('Add directories to PATH')
     exit()
@@ -111,7 +111,7 @@ except FileNotFoundError as e:
         stored_vals.to_csv(f, header=True)
 
 
-#%% GET CURRENT COUNTER VALUE
+#%% GET CURRENT COUNTER VALUE THAT KEEPS TRACK OF THE AvN CYCLE
 #Increment the counter with 1 time step    
 counter = counter_1 + 1*usr_vals['Ts']
 
@@ -132,69 +132,35 @@ write_time_1 = datetime.datetime.now() + datetime.timedelta(seconds=20)
 
 new_fAE = pd.DataFrame(
     data={
-        'date':[datetime.datetime.now().strftime("%Y.%m.%d")], 
-        'hour':[write_time_1.strftime("%H:%M:%S")],
         'DOsp':[round(DOsp,2)],
         }
     )
 
-with open(path_ctrlAction+'AIC_241_Data.csv', 'w', newline='') as f:
+with open(path_ctrlAction+'AIC_241_Data_V2.csv', 'w', newline='') as f:
+    new_fAE.to_csv(f, index=False, header=False)
+
+with open(path_ctrlAction+'AIC_251_Data_V2.csv', 'w', newline='') as f:
     new_fAE.to_csv(f, index=False, header=False)
 
 #%%  GET DATA FROM datEAUbase
 #Initialise connection with the datEAUbase
-cursor, conn = create_connection()
+cursor, connection = create_connection()
 
-#Get measurement data over a specific interval
-intrvl = 5 #minutes
-delay = 2 #minutes
-stopDateTime = datetime.datetime.now() - datetime.timedelta(hours=0, minutes=delay, seconds=0)
-startDateTime = stopDateTime - datetime.timedelta(hours=0, minutes=intrvl, seconds=0)
-Start = date_to_epoch(startDateTime.strftime("%Y-%m-%d %H:%M:%S"))
-End = date_to_epoch(stopDateTime.strftime("%Y-%m-%d %H:%M:%S"))
+try:
+    NH4, NH4_timestamp = get_last_value(connection, 49) #metadata_ID = 49 : NH4 pilote
+    NO3, NO3_timestamp = get_last_value(connection, 51) #metadata_ID = 51 : NO3 pilote
+    current_time = date_to_epoch(datetime.datetime.now())
 
-#Define the requested parameters
-Location = 'Pilote effluent'
-Project = 'pilEAUte'
-param_list = ['NH4-N','NO3-N']
-equip_list = ['Varion_002','Varion_002']
+    # Import of data into the datEAUbase ceased for some reason
+    if  current_time - NH4_timestamp or current_time - NO3_timestamp > 180:
+        NH4 = 55
+        NO3 = 55
 
-#Extract the specified parameters from the datEAUbase
-extract_list={}
-for i in range(len(param_list)):
-    extract_list[i] = {
-        'Start':Start,
-        'End':End,
-        'Project':Project,
-        'Location':Location,
-        'Parameter':param_list[i],
-        'Equipment':equip_list[i]
-    }
-    
-#Create a new pandas dataframe
-#print('ready to extract')
-df = extract_data(conn, extract_list)
+# Connection to the datEAUbase failed
+except:
+    NH4 = 99
+    NO3 = 99
 
-j = 1
-while df.empty and j < 10:
-    df = extract_data(conn, extract_list)
-    time.sleep(j*0.5) #delay next reading
-    j += 1
-
-df.columns = param_list
-df = df*1000 #set the units correctly to mg/L
-
-#Replace all zero values for NaNs
-df = df.replace(0.0, np.nan)
-df = df.dropna()
-
-#%%  FILTER DATA
-#Filter the data to get a representative value for control action calculation
-Fs = 6 #sample frequency in samples per minute
-NFltr = round(usr_vals['lenFltr']*Fs) #filter length in minutes
-
-NH4 = df['NH4-N'].iloc[-NFltr:].mean()
-NO3 = df['NO3-N'].iloc[-NFltr:].mean()
 
 #%% WHEN THE PREVIOUS CYCLE IS ALMOST FINISHED --> CALCULATE THE NEW AEROBIC FRACTION USING A PID CONTOLLER 
 
@@ -312,8 +278,6 @@ new_vals.set_index('datetime', drop=True, inplace=True)
 
 with open(path_intermData+'intermDataAvNCtrl_fAE.csv', 'a', newline='') as f:
     new_vals.to_csv(f, header=False)
-
-
 
 
 

@@ -16,7 +16,7 @@ def create_connection():
     password = 'koopa6425'  # getpass.getpass(prompt="Enter password")
     config = dict(server=   '10.10.10.10', # change this to your SQL Server hostname or IP address
                 port=      1433,                    # change this to your SQL Server port number [1433 is the default]
-                database= 'dateaubase',
+                database= 'dateaubase2020',
                 username= username,
                 password= password)
     conn_str = ('SERVER={server},{port};'   +
@@ -167,6 +167,21 @@ def get_span(connection, project, location, equipment, parameter):
     first = epoch_to_pandas_datetime(df.at[0,'first'])
     last = epoch_to_pandas_datetime(df.at[0,'last'])
     return first, last
+
+# Function used for fast extraction of the last value of a variable (Requires the metadata_ID to be known)
+def get_last_value(connection, metadata_ID):
+    query ='''
+    SELECT TOP 1 * FROM value
+    WHERE Metadata_ID = \'{}\'
+    ORDER BY Value_ID DESC; 
+    '''.format(metadata_ID)
+
+    df = pd.read_sql(query, connection)
+    value = df.at[0,'Value']
+    timestamp = df.at[0,'Timestamp']
+
+    return value, timestamp
+
 
 def clean_up_pulled_data(df,project, location, equipment, parameter):
 
