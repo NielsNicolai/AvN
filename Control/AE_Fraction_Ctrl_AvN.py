@@ -143,32 +143,38 @@ with open(path_ctrlAction+'AIC_251_Data_V2.csv', 'w', newline='') as f:
     new_fAE.to_csv(f, index=False, header=False)
 
 #%%  GET DATA FROM datEAUbase
-#Initialise connection with the datEAUbase
-cursor, connection = create_connection()
+error_conn = False
+error_import = False
 
 try:
+    #Initialise connection with the datEAUbase
+    cursor, connection = create_connection()
     NH4, NH4_timestamp = get_last_value(connection, 49) #metadata_ID = 49 : NH4 pilote
+    NH4 = NH4*1000
     NO3, NO3_timestamp = get_last_value(connection, 51) #metadata_ID = 51 : NO3 pilote
+    NO3 = NO3*1000
     current_time = date_to_epoch(datetime.datetime.now())
 
     # Import of data into the datEAUbase ceased for some reason
-    if  current_time - NH4_timestamp or current_time - NO3_timestamp > 180:
+    max_delay = 180
+    if  current_time - NH4_timestamp > max_delay or current_time - NO3_timestamp > max_delay:
         NH4 = 55
         NO3 = 55
+        error_import = True
 
 # Connection to the datEAUbase failed
 except:
     NH4 = 99
     NO3 = 99
-
+    error_conn = True
 
 #%% WHEN THE PREVIOUS CYCLE IS ALMOST FINISHED --> CALCULATE THE NEW AEROBIC FRACTION USING A PID CONTOLLER 
 
 #Calculate the error
 error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
 
-if counter == usr_vals['Tc']-1*usr_vals['Ts']:
-    #PID controller according to K. Astrom - Control System Design - 2002 
+if counter == usr_vals['Tc']-1*usr_vals['Ts'] and error_conn == False and error_import == False:
+    #PID controller according to K. Astrom - Control System Design - 2002
     #Forward Euler for the integral term; Backward Euler for the derivative term
     #Anti-windup strategy using back-calculation
     #Filtered derivative action using a low pass filter with filter coeff N

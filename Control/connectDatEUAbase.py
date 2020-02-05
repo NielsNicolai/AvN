@@ -243,3 +243,4 @@ def plot_pulled_data(df):
     plt.legend([sensors[i]+' ('+units[i]+')' for i in range(len(sensors))])
     plt.xticks(rotation=45)
     plt.show()
+
