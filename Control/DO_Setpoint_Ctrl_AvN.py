@@ -15,7 +15,7 @@ import pandas as pd
 import numpy as np
 import os
 import time
-#import definitions_AvN 
+#import definitions_AvN
 
 from connectDatEUAbase import *
 
@@ -32,11 +32,11 @@ if PC_name == 'MODELEAU':
     path_usrVals = 'C:/Users/Admin/Documents/Python Scripts/AvN Control/'
 elif PC_name == 'GCI-MODELEAU-08':
     #Define in which folder the intermediate data is stored
-    path_intermData = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_intermData = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/Data/'
     #Define in which folder the final control action is stored
-    path_ctrlAction = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_ctrlAction = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/Data/'
     #Define in which folder the user defined variables are found
-    path_usrVals = 'C:/Users/NINIC2/Documents/GitHub/AvNControl/'
+    path_usrVals = 'C:/Users/NINIC2/Documents/GitHub/AvN/Control/'
 else:
     print('Add directories to PATH')
     exit()
@@ -46,58 +46,32 @@ with open(path_usrVals+'values_init_DOsp_AvN.txt') as f:
     usr_vals = eval(f.read())
 
 #%%  GET DATA FROM datEAUbase
-#Initialise connection with the datEAUbase
-cursor, conn = create_connection()
+error_conn = False
+error_import = False
 
-#Get measurement data over a specific interval
-intrvl = 5 #minutes
-delay = 2 #minutes
-stopDateTime = datetime.datetime.now() - datetime.timedelta(hours=0, minutes=delay, seconds=0)
-startDateTime = stopDateTime - datetime.timedelta(hours=0, minutes=intrvl, seconds=0)
-Start = date_to_epoch(startDateTime.strftime("%Y-%m-%d %H:%M:%S"))
-End = date_to_epoch(stopDateTime.strftime("%Y-%m-%d %H:%M:%S"))
+try:
+    #Initialise connection with the datEAUbase
+    cursor, connection = create_connection()
+    NH4, NH4_timestamp = get_last_value(connection, 55) #metadata_ID = 49 : NH4 co-pilote
+    NH4 = NH4*1000
+    NO3, NO3_timestamp = get_last_value(connection, 57) #metadata_ID = 51 : NO3 co-pilote
+    NO3 = NO3*1000
+    current_time = date_to_epoch(datetime.datetime.now())
 
-#Define the requested parameters
-Location = 'Copilote effluent'
-Project = 'pilEAUte'
-param_list = ['NH4-N','NO3-N']
-equip_list = ['Varion_001','Varion_001']
+    # Import of data into the datEAUbase ceased for some reason
+    max_delay = 180
+    if  current_time - NH4_timestamp > max_delay or current_time - NO3_timestamp > max_delay:
+        NH4 = 55
+        NO3 = 55
+        error_import = True
 
-#Extract the specified parameters from the datEAUbase
-extract_list={}
-for i in range(len(param_list)):
-    extract_list[i] = {
-        'Start':Start,
-        'End':End,
-        'Project':Project,
-        'Location':Location,
-        'Parameter':param_list[i],
-        'Equipment':equip_list[i]
-    }
-    
-#Create a new pandas dataframe
-#print('ready to extract')
-df = extract_data(conn, extract_list)
-
-j = 1
-while df.empty and j < 10:
-    df = extract_data(conn, extract_list)
-    time.sleep(j*0.5) #delay next reading
-    j += 1
-
-df.columns = param_list
-df = df*1000 #set the units correctly to mg/L
-
-#Replace all zero values for NaNs
-df = df.replace(0.0, np.nan)
-df = df.dropna()
+# Connection to the datEAUbase failed
+except:
+    NH4 = 99
+    NO3 = 99
+    error_conn = True
 
 #%%  GET INTERMEDIATE DATA STORED LOCALLY
-
-#today = datetime.datetime.now().strftime("%Y%m%d")
-#yesterdayTemp = datetime.datetime.now() - datetime.timedelta(days=1)
-#yesterday = yesterdayTemp.strftime("%Y%m%d")
-
 #Try to get previous control values saved in an existing txt file of the same day
 try:    
     stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_DO'+'.csv', sep=',')
@@ -122,24 +96,13 @@ try:
 
 #Catch error if file is not existing              
 except FileNotFoundError as e1:
-    
-    #Try to get previous control values saved in an existing txt file of the previous day
-    '''try: 
-        stored_vals = pd.read_csv(path_intermData+'intermDataAvNCtrl_DO'+yesterday+'.csv', sep=',')
-        stored_vals.set_index('datetime', drop=True, inplace=True)
-        DOsp_1  = stored_vals['DOsp_1'].iloc[-1]
-        error_1 = stored_vals['error_1'].iloc[-1]
-    
-    #Create a new file where the previous control values will be saved
-    except FileNotFoundError as e2:'''
     DOsp_1 = usr_vals['DOsp']
     error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
     error_2 = error_1
     PID_P_1 = 0
-    PID_I_1 = 0.15
+    PID_I_1 = usr_vals['DOsp_man']
     PID_D_1 = 0
 
-    
     stored_vals = pd.DataFrame(
         data={
             'datetime':[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
@@ -159,16 +122,6 @@ except FileNotFoundError as e1:
     with open(path_intermData+'intermDataAvNCtrl_DO'+'.csv', 'a') as f:
         stored_vals.to_csv(f, header=True)
 
-
-
-#%%  FILTER DATA
-#Filter the data to get a representative value for control action calculation
-Fs = 6 #sample frequency in samples per minute
-NFltr = round(usr_vals['lenFltr']*Fs) #filter length in minutes
-
-NH4 = df['NH4-N'].iloc[-NFltr:].mean()
-NO3 = df['NO3-N'].iloc[-NFltr:].mean()
-
 #%% POSITIONAL PID ALGORITHM + ANTI-RESET WINDUP
 #PID controller according to K. Astrom - Control System Design - 2002 
 #Forward Euler for the integral term; Backward Euler for the derivative term
@@ -176,77 +129,85 @@ NO3 = df['NO3-N'].iloc[-NFltr:].mean()
 #Filtered derivative action using a low pass filter with filter coeff N
 #Without setpoint weighing (reason: AvN setpoint is fixed to 0)
 
-#Calculate the error
-error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
+if not error_conn or not error_import:
 
-#Recalculate control parameters
-#Sampling time
-h = usr_vals['Ts']
+    #Calculate the error
+    error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
 
-#Proportional action
-K = usr_vals['P']
+    #Recalculate control parameters
+    #Sampling time
+    h = usr_vals['Ts']
 
-#Integral action
-if usr_vals['I'] != 0: #Make sure not to divide by 0
-	Ti = usr_vals['P']/usr_vals['I'] 
+    #Proportional action
+    K = usr_vals['P']
+
+    #Integral action
+    if usr_vals['I'] != 0: #Make sure not to divide by 0
+        Ti = usr_vals['P']/usr_vals['I'] 
+    else:
+        Ti = 999999
+
+    #Derivative action
+    if usr_vals['P'] != 0:
+        Td = usr_vals['D']/usr_vals['P']
+    else:
+        Td = 0
+
+    if Td != 0: #Tracking time constant for anti-windup back-calculation
+        Tt = Ti/2#(Ti*Td)**0.5
+    else:
+        Tt = Ti/2
+        
+    N = usr_vals['N'] #Derivative LPF filter coefficient (the higher the less filtering)
+
+    #Compute control coefficients
+    int_coeff_1 = K*h/Ti
+    int_coeff_2 = h/Tt
+    #According to book Astrom: (gives problems)
+    #dif_coeff_1 = (2*Td-N*h)/(2*Td+N*h)
+    #dif_coeff_2 = 2*K*N*Td/(2*Td+N*h)
+    #According to scilab:
+    dif_coeff_1 = Td/(Td+h*N) #scilab
+    dif_coeff_2 = -Td*K*N/(Td+N*h)
+
+    #Control action calculation
+    PID_P = K*error
+    PID_D = (dif_coeff_1*PID_D_1)-(dif_coeff_2*(error-error_1))
+
+    if Td == 0:
+        PID_D = 0
+
+    #Sanity check of the PID terms in case nan comes up (Should already be cached when reading stored values for multiple times)
+    if np.isnan(PID_P):
+        PID_P = 0
+    if np.isnan(PID_I_1):
+        PID_I_1 = 0.15  
+    if np.isnan(PID_D):
+        PID_D = 0
+
+    #Summation of each of the PID terms
+    DOsp_uncstrnd = PID_P+PID_I_1+PID_D
+
+    #Limit the DO setpoint
+    DOsp = np.clip(DOsp_uncstrnd, a_min=usr_vals['DOsp_min'], a_max=usr_vals['DOsp_max'])
+
+    #If for some reason the calculated values are NaNs
+    if np.isnan(DOsp) | np.isnan(DOsp_uncstrnd): 
+        DOsp = DOsp_1
+        DOsp_uncstrnd = DOsp_1
+
+    #Update integral action: Forward Euler integration taking into account reset windup
+    PID_I = PID_I_1 + int_coeff_1*error + int_coeff_2*(DOsp-DOsp_uncstrnd)
+
+    #Sanity check of the I term in case nan comes up (Should already be cached when reading stored values for multiple times)
+    if np.isnan(PID_I):
+        PID_I = 0.15
+
 else:
-	Ti = 999999
-
-#Derivative action
-if usr_vals['P'] != 0:
-	Td = usr_vals['D']/usr_vals['P']
-else:
-	Td = 0
-
-if Td != 0: #Tracking time constant for anti-windup back-calculation
-	Tt = Ti/2#(Ti*Td)**0.5
-else:
-	Tt = Ti/2
-    
-N = usr_vals['N'] #Derivative LPF filter coefficient (the higher the less filtering)
-
-#Compute control coefficients
-int_coeff_1 = K*h/Ti
-int_coeff_2 = h/Tt
-#According to book Astrom: (gives problems)
-#dif_coeff_1 = (2*Td-N*h)/(2*Td+N*h)
-#dif_coeff_2 = 2*K*N*Td/(2*Td+N*h)
-#According to scilab:
-dif_coeff_1 = Td/(Td+h*N) #scilab
-dif_coeff_2 = -Td*K*N/(Td+N*h)
-
-#Control action calculation
-PID_P = K*error
-PID_D = (dif_coeff_1*PID_D_1)-(dif_coeff_2*(error-error_1))
-
-if Td == 0:
-    PID_D = 0
-
-#Sanity check of the PID terms in case nan comes up (Should already be cached when reading stored values for multiple times)
-if np.isnan(PID_P):
-    PID_P = 0
-if np.isnan(PID_I_1):
-    PID_I_1 = 0.15  
-if np.isnan(PID_D):
-    PID_D = 0
-
-#Summation of each of the PID terms
-DOsp_uncstrnd = PID_P+PID_I_1+PID_D
-
-#Limit the DO setpoint
-DOsp = np.clip(DOsp_uncstrnd, a_min=usr_vals['DOsp_min'], a_max=usr_vals['DOsp_max'])
-
-#If for some reason the calculated values are NaNs
-if np.isnan(DOsp) | np.isnan(DOsp_uncstrnd): 
     DOsp = DOsp_1
-    DOsp_uncstrnd = DOsp_1
-
-#Update integral action: Forward Euler integration taking into account reset windup
-PID_I = PID_I_1 + int_coeff_1*error + int_coeff_2*(DOsp-DOsp_uncstrnd)
-
-#Sanity check of the I term in case nan comes up (Should already be cached when reading stored values for multiple times)
-if np.isnan(PID_I):
-    PID_I = 0.15
+    PID_P = PID_P_1
+    PID_I = PID_I_1
+    PID_D = PID_D_1
 
 #%% APPLY SETPOINT
 #Overwrite CSV file DO setpoints continuous DO control
@@ -259,13 +220,14 @@ write_time = datetime.datetime.now() + datetime.timedelta(seconds=20) #delay at 
 
 new_DOsp = pd.DataFrame(
     data={
-        'date':[datetime.datetime.now().strftime("%Y.%m.%d")], 
-        'hour':[write_time.strftime("%H:%M:%S")],
         'DOsp':[round(DOsp,2)],
         }
     )
 
-with open(path_ctrlAction+'AIC_341_Data.csv', 'w', newline='') as f:
+with open(path_ctrlAction+'AIC_341_Data_V2.csv', 'w', newline='') as f:
+    new_DOsp.to_csv(f, index=False, header=False)
+
+with open(path_ctrlAction+'AIC_351_Data_V2.csv', 'w', newline='') as f:
     new_DOsp.to_csv(f, index=False, header=False)
 
 #%% STORE INTERMEDIATE DATA LOCALLY
