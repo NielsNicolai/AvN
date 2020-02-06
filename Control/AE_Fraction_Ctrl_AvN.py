@@ -83,7 +83,7 @@ except FileNotFoundError as e:
     error_1 = usr_vals['NH4']-(usr_vals['alpha']*usr_vals['NO3'])-usr_vals['beta']
     error_2 = error_1
     PID_P_1 = 0
-    PID_I_1 = 0
+    PID_I_1 = usr_vals['fAE_man']
     PID_D_1 = 0
     tAE_1 = 0
     counter_1 = usr_vals['Tc']-2*usr_vals['Ts']
@@ -173,7 +173,7 @@ except:
 #Calculate the error
 error = NH4 - (usr_vals['alpha']*NO3) - usr_vals['beta'] #difference
 
-if counter == usr_vals['Tc']-1*usr_vals['Ts'] and error_conn == False and error_import == False:
+if counter == usr_vals['Tc']-1*usr_vals['Ts'] and not error_conn and not error_import:
     #PID controller according to K. Astrom - Control System Design - 2002
     #Forward Euler for the integral term; Backward Euler for the derivative term
     #Anti-windup strategy using back-calculation

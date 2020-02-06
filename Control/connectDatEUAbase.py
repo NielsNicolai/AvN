@@ -168,7 +168,8 @@ def get_span(connection, project, location, equipment, parameter):
     last = epoch_to_pandas_datetime(df.at[0,'last'])
     return first, last
 
-# Function used for fast extraction of the last value of a variable (Requires the metadata_ID to be known)
+# Function used for fast extraction of the last value of a variable (Requires
+# the metadata_ID to be known)
 def get_last_value(connection, metadata_ID):
     query ='''
     SELECT TOP 1 * FROM value
