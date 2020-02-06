@@ -59,7 +59,7 @@ try:
     current_time = date_to_epoch(datetime.datetime.now())
 
     # Import of data into the datEAUbase ceased for some reason
-    max_delay = 180
+    max_delay = 5*60
     if  current_time - NH4_timestamp > max_delay or current_time - NO3_timestamp > max_delay:
         NH4 = 55
         NO3 = 55
