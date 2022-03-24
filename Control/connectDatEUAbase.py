@@ -12,8 +12,8 @@ def create_connection():
 #    with open('login.txt') as f:
 #        usr = f.readline().strip()
 #        pwd = f.readline().strip()
-    username = 'jeandavidt'  # input("Enter username")
-    password = 'koopa6425'  # getpass.getpass(prompt="Enter password")
+    username = ''  # input("Enter username")
+    password = ''  # getpass.getpass(prompt="Enter password")
     config = dict(server=   '10.10.10.10', # change this to your SQL Server hostname or IP address
                 port=      1433,                    # change this to your SQL Server port number [1433 is the default]
                 database= 'dateaubase2020',
